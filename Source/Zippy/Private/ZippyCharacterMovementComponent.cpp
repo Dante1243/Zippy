@@ -2,6 +2,7 @@
 
 #include "ZippyCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/OverlapResult.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
@@ -147,8 +148,8 @@ void UZippyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick
 	TickCount++;
 	if (IsNetMode(NM_Client))
 	{
-		GEngine->AddOnScreenDebugMessage(2, 100.f, FColor::Yellow, FString::Printf(TEXT("Correction: %.2f"), 100.f * (float)CorrectionCount / (float)TickCount));
-		GEngine->AddOnScreenDebugMessage(9, 100.f, FColor::Yellow, FString::Printf(TEXT("Bitrate: %.3f"), (float)TotalBitsSent / GetWorld()->GetTimeSeconds() / 1000.f));
+		GEngine->AddOnScreenDebugMessage(2, 100.f, FColor::Yellow, FString::Printf(TEXT("Correction: %.2f"), 100.f * static_cast<float>(CorrectionCount) / static_cast<float>(TickCount)));
+		GEngine->AddOnScreenDebugMessage(9, 100.f, FColor::Yellow, FString::Printf(TEXT("Bitrate: %.3f"), static_cast<float>(TotalBitsSent) / GetWorld()->GetTimeSeconds() / 1000.f));
 	}
 	else
 	{
@@ -175,12 +176,11 @@ void UZippyCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 }
 
 void UZippyCharacterMovementComponent::OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData,
-	float TimeStamp, FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName,
-	bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode)
+float TimeStamp, FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName,
+bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode, FVector ServerGravityDirection)
 {
 	Super::OnClientCorrectionReceived(ClientData, TimeStamp, NewLocation, NewVelocity, NewBase, NewBaseBoneName,
-	                                  bHasBase, bBaseRelativePosition,
-	                                  ServerMovementMode);
+	bHasBase, bBaseRelativePosition, ServerMovementMode, ServerGravityDirection);
 
 	CorrectionCount++;
 }
@@ -472,8 +472,8 @@ void UZippyCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == CMOVE_Slide) ExitSlide();
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == CMOVE_Prone) ExitProne();
 	
-	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, (ECustomMovementMode)PreviousCustomMode);
-	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, (ECustomMovementMode)PreviousCustomMode);
+	if (IsCustomMovementMode(CMOVE_Slide)) EnterSlide(PreviousMovementMode, static_cast<ECustomMovementMode>(PreviousCustomMode));
+	if (IsCustomMovementMode(CMOVE_Prone)) EnterProne(PreviousMovementMode, static_cast<ECustomMovementMode>(PreviousCustomMode));
 
 	if (IsFalling())
 	{
@@ -522,10 +522,9 @@ void UZippyCharacterMovementComponent::CallServerMovePacked(const FSavedMove_Cha
 
 	// 'static' to avoid reallocation each invocation
 	static FCharacterServerMovePackedBits PackedBits;
-	UNetConnection* NetConnection = CharacterOwner->GetNetConnection();	
-
-
+	
 	{
+		const UNetConnection* NetConnection = CharacterOwner->GetNetConnection();
 		// Extract the net package map used for serializing object references.
 		ZippyServerMoveBitWriter.PackageMap = NetConnection ? ToRawPtr(NetConnection->PackageMap) : nullptr;
 	}
@@ -567,7 +566,7 @@ void UZippyCharacterMovementComponent::EnterSlide(EMovementMode PrevMode, ECusto
 	bOrientRotationToMovement = false;
 	Velocity += Velocity.GetSafeNormal2D() * SlideEnterImpulse;
 
-	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, NULL);
+	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, nullptr);
 }
 void UZippyCharacterMovementComponent::ExitSlide()
 {
@@ -615,7 +614,7 @@ void UZippyCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iteratio
 
 		// Save current values
 		UPrimitiveComponent * const OldBase = GetMovementBase();
-		const FVector PreviousBaseLocation = (OldBase != NULL) ? OldBase->GetComponentLocation() : FVector::ZeroVector;
+		const FVector PreviousBaseLocation = (OldBase != nullptr) ? OldBase->GetComponentLocation() : FVector::ZeroVector;
 		const FVector OldLocation = UpdatedComponent->GetComponentLocation();
 		const FFindFloorResult OldFloor = CurrentFloor;
 
@@ -675,7 +674,7 @@ void UZippyCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iteratio
 		}
 		else
 		{
-			FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, bZeroDelta, NULL);
+			FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, bZeroDelta, nullptr);
 		}
 
 
@@ -703,7 +702,7 @@ void UZippyCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iteratio
 			{
 				// see if it is OK to jump
 				// @todo collision : only thing that can be problem is that oldbase has world collision on
-				bool bMustJump = bZeroDelta || (OldBase == NULL || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
+				bool bMustJump = bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
 				if ( (bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
 				{
 					return;
@@ -756,7 +755,7 @@ void UZippyCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iteratio
 			// See if we need to start falling.
 			if (!CurrentFloor.IsWalkableFloor() && !CurrentFloor.HitResult.bStartPenetrating)
 			{
-				const bool bMustJump = bJustTeleported || bZeroDelta || (OldBase == NULL || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
+				const bool bMustJump = bJustTeleported || bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
 				if ((bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
 				{
 					return;
@@ -809,7 +808,7 @@ void UZippyCharacterMovementComponent::EnterProne(EMovementMode PrevMode, ECusto
 		Velocity += Velocity.GetSafeNormal2D() * ProneSlideEnterImpulse;
 	}
 
-	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, NULL);
+	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, nullptr);
 }
 void UZippyCharacterMovementComponent::ExitProne()
 {
@@ -849,7 +848,7 @@ void UZippyCharacterMovementComponent::PhysProne(float deltaTime, int32 Iteratio
 
 		// Save current values
 		UPrimitiveComponent * const OldBase = GetMovementBase();
-		const FVector PreviousBaseLocation = (OldBase != NULL) ? OldBase->GetComponentLocation() : FVector::ZeroVector;
+		const FVector PreviousBaseLocation = (OldBase != nullptr) ? OldBase->GetComponentLocation() : FVector::ZeroVector;
 		const FVector OldLocation = UpdatedComponent->GetComponentLocation();
 		const FFindFloorResult OldFloor = CurrentFloor;
 
@@ -902,7 +901,7 @@ void UZippyCharacterMovementComponent::PhysProne(float deltaTime, int32 Iteratio
 		}
 		else
 		{
-			FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, bZeroDelta, NULL);
+			FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, bZeroDelta, nullptr);
 		}
 
 
@@ -930,7 +929,7 @@ void UZippyCharacterMovementComponent::PhysProne(float deltaTime, int32 Iteratio
 			{
 				// see if it is OK to jump
 				// @todo collision : only thing that can be problem is that oldbase has world collision on
-				bool bMustJump = bZeroDelta || (OldBase == NULL || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
+				bool bMustJump = bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
 				if ( (bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
 				{
 					return;
@@ -972,7 +971,7 @@ void UZippyCharacterMovementComponent::PhysProne(float deltaTime, int32 Iteratio
 			// See if we need to start falling.
 			if (!CurrentFloor.IsWalkableFloor() && !CurrentFloor.HitResult.bStartPenetrating)
 			{
-				const bool bMustJump = bJustTeleported || bZeroDelta || (OldBase == NULL || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
+				const bool bMustJump = bJustTeleported || bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
 				if ((bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
 				{
 					return;
@@ -1286,8 +1285,7 @@ void UZippyCharacterMovementComponent::PhysWallRun(float deltaTime, int32 Iterat
 		
 		// Compute move parameters
 		const FVector Delta = timeTick * Velocity; // dx = v * dt
-		const bool bZeroDelta = Delta.IsNearlyZero();
-		if ( bZeroDelta )
+		if (Delta.IsNearlyZero())
 		{
 			remainingTime = 0.f;
 		}
@@ -1465,6 +1463,7 @@ void UZippyCharacterMovementComponent::PhysClimb(float deltaTime, int32 Iteratio
 	Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime; // v = dx / dt
 }
 
+#pragma endregion
 
 #pragma region Helpers
 
