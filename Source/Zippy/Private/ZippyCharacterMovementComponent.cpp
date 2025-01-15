@@ -27,6 +27,7 @@ float MacroDuration = 2.f;
 UZippyCharacterMovementComponent::FSavedMove_Zippy::FSavedMove_Zippy()
 {
 	Saved_bWantsToSprint=0;
+	Saved_bWantsToSlide=0;
 	Saved_bWantsToProne=0;
 	Saved_bPrevWantsToCrouch=0;
 }
@@ -39,12 +40,14 @@ bool UZippyCharacterMovementComponent::FSavedMove_Zippy::CanCombineWith(const FS
 	{
 		return false;
 	}
-
+	if (Saved_bWantsToSlide != NewZippyMove->Saved_bWantsToSlide)
+	{
+		return false;
+	}
 	if (Saved_bWantsToDash != NewZippyMove->Saved_bWantsToDash)
 	{
 		return false;
 	}
-
 	if (Saved_bWallRunIsRight != NewZippyMove->Saved_bWallRunIsRight)
 	{
 		return false;
@@ -58,6 +61,7 @@ void UZippyCharacterMovementComponent::FSavedMove_Zippy::Clear()
 	FSavedMove_Character::Clear();
 
 	Saved_bWantsToSprint = 0;
+	Saved_bWantsToSlide = 0;
 	Saved_bWantsToDash = 0;
 	Saved_bPressedZippyJump = 0;
 
@@ -76,6 +80,7 @@ uint8 UZippyCharacterMovementComponent::FSavedMove_Zippy::GetCompressedFlags() c
 
 	if (Saved_bWantsToSprint) Result |= FLAG_Sprint;
 	if (Saved_bWantsToDash) Result |= FLAG_Dash;
+	if (Saved_bWantsToSlide) Result |= FLAG_Slide;
 	if (Saved_bPressedZippyJump) Result |= FLAG_JumpPressed;
 
 	return Result;
@@ -88,6 +93,7 @@ void UZippyCharacterMovementComponent::FSavedMove_Zippy::SetMoveFor(ACharacter* 
 	const UZippyCharacterMovementComponent* CharacterMovement = Cast<UZippyCharacterMovementComponent>(C->GetCharacterMovement());
 
 	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
+	Saved_bWantsToSlide = CharacterMovement->Safe_bWantsToSlide;
 	Saved_bPrevWantsToCrouch = CharacterMovement->Safe_bPrevWantsToCrouch;
 	Saved_bPressedZippyJump = CharacterMovement->ZippyCharacterOwner->bPressedZippyJump;
 
@@ -107,6 +113,7 @@ void UZippyCharacterMovementComponent::FSavedMove_Zippy::PrepMoveFor(ACharacter*
 	UZippyCharacterMovementComponent* CharacterMovement = Cast<UZippyCharacterMovementComponent>(C->GetCharacterMovement());
 
 	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
+	CharacterMovement->Safe_bWantsToSlide = Saved_bWantsToSlide;
 	CharacterMovement->Safe_bPrevWantsToCrouch = Saved_bPrevWantsToCrouch;
 	CharacterMovement->ZippyCharacterOwner->bPressedZippyJump = Saved_bPressedZippyJump;
 
@@ -173,6 +180,7 @@ void UZippyCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 
 	Safe_bWantsToSprint = (Flags & FSavedMove_Zippy::FLAG_Sprint) != 0;
 	Safe_bWantsToDash = (Flags & FSavedMove_Zippy::FLAG_Dash) != 0;
+	Safe_bWantsToSlide = (Flags & FSavedMove_Zippy::FLAG_Slide) != 0;
 }
 
 void UZippyCharacterMovementComponent::OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData,
@@ -295,14 +303,14 @@ bool UZippyCharacterMovementComponent::DoJump(bool bReplayingMoves)
 void UZippyCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
 	// Slide
-	if (MovementMode == MOVE_Walking && !bWantsToCrouch && Safe_bPrevWantsToCrouch)
+	if (MovementMode == MOVE_Walking && Safe_bWantsToSlide)
 	{
 		if (CanSlide())
 		{
 			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
 	}
-	else if (IsCustomMovementMode(CMOVE_Slide) && !bWantsToCrouch)
+	else if (IsCustomMovementMode(CMOVE_Slide) && !Safe_bWantsToSlide)
 	{
 		SetMovementMode(MOVE_Walking);
 	}
@@ -570,6 +578,7 @@ void UZippyCharacterMovementComponent::EnterSlide(EMovementMode PrevMode, ECusto
 }
 void UZippyCharacterMovementComponent::ExitSlide()
 {
+	Safe_bWantsToSlide = false;
 	bWantsToCrouch = false;
 	bOrientRotationToMovement = true;
 }
@@ -1493,6 +1502,16 @@ void UZippyCharacterMovementComponent::SprintPressed()
 void UZippyCharacterMovementComponent::SprintReleased()
 {
 	Safe_bWantsToSprint = false;
+}
+
+void UZippyCharacterMovementComponent::SlidePressed()
+{
+	Safe_bWantsToSlide = true;
+}
+
+void UZippyCharacterMovementComponent::SlideReleased()
+{
+	Safe_bWantsToSlide = false;
 }
 
 void UZippyCharacterMovementComponent::CrouchPressed()

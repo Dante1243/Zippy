@@ -32,13 +32,14 @@ class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComp
 		{
 			FLAG_Sprint			= 0x10,
 			FLAG_Dash			= 0x20,
-			FLAG_Custom_2		= 0x40,
+			FLAG_Slide  		= 0x40,
 			FLAG_Custom_3		= 0x80,
 		};
 		
 		// Flags
 		uint8 Saved_bPressedZippyJump:1;
 		uint8 Saved_bWantsToSprint:1;
+		uint8 Saved_bWantsToSlide:1;
 		uint8 Saved_bWantsToDash:1;
 
 		// Other Variables
@@ -131,6 +132,7 @@ class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComp
 
 		// Flags
 		bool Safe_bWantsToSprint;
+		bool Safe_bWantsToSlide;
 		bool Safe_bWantsToProne;
 		bool Safe_bWantsToDash;
 
@@ -255,6 +257,9 @@ private:
 public:
 	UFUNCTION(BlueprintCallable) void SprintPressed();
 	UFUNCTION(BlueprintCallable) void SprintReleased();
+
+	UFUNCTION(BlueprintCallable) void SlidePressed();
+	UFUNCTION(BlueprintCallable) void SlideReleased();
 
 	UFUNCTION(BlueprintCallable) void CrouchPressed();
 	UFUNCTION(BlueprintCallable) void CrouchReleased();
