@@ -54,6 +54,8 @@ enum ECustomMovementMode
 	CMOVE_MAX UMETA(Hidden),
 };
 
+DECLARE_LOG_CATEGORY_EXTERN(LogSurvivalCharacterMovement, Log, All);
+
 /**
  * Custom Character Movement Component that extends UCharacterMovementComponent
  * with additional movement modes (slide, prone, wallrun, etc.) and functionalities
@@ -207,6 +209,10 @@ protected:
 	
 	#pragma region Slide
 
+	/** Weather we can slide off a ledge if false we will attempt to stop from directly sliding of a ledge */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Slide")
+	bool bCanSlideOffOfLedges = true;
+	
 	/** Minimum horizontal speed needed to initiate a slide. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Slide", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MinSlideSpeed = 400.f;
@@ -325,7 +331,7 @@ protected:
 
 	#pragma endregion
 
-	#pragma  region Wall Run
+	#pragma region Wall Run
 	
 	/** Minimum speed required to initiate a wall run. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
@@ -546,6 +552,12 @@ public:
 	 * @return True if the jump was started; false otherwise.
 	 */
 	virtual bool DoJump(bool bReplayingMoves) override;
+
+	/**
+	 * Checks if the player can move of a ledge in its current movement mode.
+	 * @return Can we move off this ledge
+	 */
+	virtual bool CanWalkOffLedges() const override;
 
 protected:
 	/**
@@ -903,6 +915,18 @@ public:
 	 */
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE bool IsClimbing() const { return IsCustomMovementMode(CMOVE_Climb); }
+
+	/**
+	 * @return True if we are currently in sliding mode.
+	 */
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE bool IsSliding() const { return IsCustomMovementMode(CMOVE_Slide); }
+
+	/**
+	 * @return True if we are currently in prone mode.
+	 */
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE bool IsProne() const { return IsCustomMovementMode(CMOVE_Prone); }
 
 public:
 

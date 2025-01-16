@@ -27,6 +27,8 @@ float MacroDuration = 2.f;
 // A guard against a simulated proxy if true we are a simulated proxy.
 #define SIM_PROXY_GUARD CharacterOwner && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy
 
+DEFINE_LOG_CATEGORY(LogSurvivalCharacterMovement);
+
 
 #pragma region Saved Move
 
@@ -150,6 +152,7 @@ FSavedMovePtr USurvivalCharacterMovementComponent::FNetworkPredictionData_Client
 
 USurvivalCharacterMovementComponent::USurvivalCharacterMovementComponent()
 {
+	bCanWalkOffLedgesWhenCrouching = true;
 	NavAgentProps.bCanCrouch = true;
 	SurvivalServerMoveBitWriter.SetAllowResize(true);
 }
@@ -303,7 +306,15 @@ bool USurvivalCharacterMovementComponent::DoJump(bool bReplayingMoves)
 	return false;
 }
 
-
+bool USurvivalCharacterMovementComponent::CanWalkOffLedges() const
+{
+	if (IsSliding())
+	{
+		return bCanSlideOffOfLedges;
+	}
+	
+	return Super::CanWalkOffLedges();
+}
 
 // Movement Pipeline
 void USurvivalCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
@@ -660,7 +671,7 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 		FStepDownResult StepDownResult;
 		bool bFloorWalkable = CurrentFloor.IsWalkableFloor();
 
-		if ( bZeroDelta )
+		if (bZeroDelta)
 		{
 			remainingTime = 0.f;
 		}
@@ -669,7 +680,7 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 			// try to move forward
 			MoveAlongFloor(MoveVelocity, timeTick, &StepDownResult);
 
-			if ( IsFalling() )
+			if (IsFalling())
 			{
 				// pawn decided to jump up
 				const float DesiredDist = Delta.Size();
@@ -678,10 +689,10 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 					const float ActualDist = (UpdatedComponent->GetComponentLocation() - OldLocation).Size2D();
 					remainingTime += timeTick * (1.f - FMath::Min(1.f,ActualDist/DesiredDist));
 				}
-				StartNewPhysics(remainingTime,Iterations);
+				StartNewPhysics(remainingTime, Iterations);
 				return;
 			}
-			else if ( IsSwimming() ) //just entered water
+			else if (IsSwimming()) //just entered water
 			{
 				StartSwimming(OldLocation, OldVelocity, timeTick, remainingTime, Iterations);
 				return;
@@ -699,15 +710,14 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 			FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, bZeroDelta, nullptr);
 		}
 
-
-		// check for ledges here
-		const bool bCheckLedges = !CanWalkOffLedges();
-		if ( bCheckLedges && !CurrentFloor.IsWalkableFloor() )
+		// @TODO: Should just stop the character dead in its tracks if we cant slide of the ledge?
+		// Checking for ledges to avoid if we cant walk off them.
+		if (!CanWalkOffLedges() && !CurrentFloor.IsWalkableFloor())
 		{
 			// calculate possible alternate movement
 			const FVector GravDir = FVector(0.f,0.f,-1.f);
 			const FVector NewDelta = bTriedLedgeMove ? FVector::ZeroVector : GetLedgeMove(OldLocation, Delta, GravDir);
-			if ( !NewDelta.IsZero() )
+			if (!NewDelta.IsZero())
 			{
 				// first revert this move
 				RevertMove(OldLocation, OldBase, PreviousBaseLocation, OldFloor, false);
@@ -722,16 +732,16 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 			}
 			else
 			{
-				// see if it is OK to jump
-				// @todo collision : only thing that can be problem is that oldbase has world collision on
+				// See if it is OK to jump
+				// @TODO collision : only thing that can be problem is that oldbase has world collision on
 				bool bMustJump = bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
-				if ( (bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
+				if ((bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump))
 				{
 					return;
 				}
 				bCheckedFall = true;
 
-				// revert this move
+				// Revert this move
 				RevertMove(OldLocation, OldBase, PreviousBaseLocation, OldFloor, true);
 				remainingTime = 0.f;
 				break;
@@ -767,8 +777,8 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 				bForceNextFloorCheck = true;
 			}
 
-			// check if just entered water
-			if ( IsSwimming() )
+			// Check if just entered water
+			if (IsSwimming())
 			{
 				StartSwimming(OldLocation, Velocity, timeTick, remainingTime, Iterations);
 				return;
@@ -778,7 +788,7 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 			if (!CurrentFloor.IsWalkableFloor() && !CurrentFloor.HitResult.bStartPenetrating)
 			{
 				const bool bMustJump = bJustTeleported || bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
-				if ((bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
+				if ((bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump))
 				{
 					return;
 				}
@@ -790,7 +800,7 @@ void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Itera
 		if (IsMovingOnGround() && bFloorWalkable)
 		{
 			// Make velocity reflect actual move
-			if( !bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() && timeTick >= MIN_TICK_TIME)
+			if(!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity() && timeTick >= MIN_TICK_TIME)
 			{
 				// TODO-RootMotionSource: Allow this to happen during partial override Velocity, but only set allowed axes?
 				Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / timeTick;
@@ -888,7 +898,7 @@ void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Itera
 		const bool bZeroDelta = Delta.IsNearlyZero();
 		FStepDownResult StepDownResult;
 
-		if ( bZeroDelta )
+		if (bZeroDelta)
 		{
 			remainingTime = 0.f;
 		}
@@ -896,7 +906,7 @@ void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Itera
 		{
 			MoveAlongFloor(MoveVelocity, timeTick, &StepDownResult);
 
-			if ( IsFalling() )
+			if (IsFalling())
 			{
 				// pawn decided to jump up
 				const float DesiredDist = Delta.Size();
@@ -908,7 +918,7 @@ void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Itera
 				StartNewPhysics(remainingTime,Iterations);
 				return;
 			}
-			else if ( IsSwimming() ) //just entered water
+			else if (IsSwimming()) //just entered water
 			{
 				StartSwimming(OldLocation, OldVelocity, timeTick, remainingTime, Iterations);
 				return;
@@ -929,12 +939,12 @@ void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Itera
 
 		// check for ledges here
 		const bool bCheckLedges = !CanWalkOffLedges();
-		if ( bCheckLedges && !CurrentFloor.IsWalkableFloor() )
+		if (bCheckLedges && !CurrentFloor.IsWalkableFloor())
 		{
 			// calculate possible alternate movement
 			const FVector GravDir = FVector(0.f,0.f,-1.f);
 			const FVector NewDelta = bTriedLedgeMove ? FVector::ZeroVector : GetLedgeMove(OldLocation, Delta, GravDir);
-			if ( !NewDelta.IsZero() )
+			if (!NewDelta.IsZero())
 			{
 				// first revert this move
 				RevertMove(OldLocation, OldBase, PreviousBaseLocation, OldFloor, false);
@@ -952,7 +962,7 @@ void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Itera
 				// see if it is OK to jump
 				// @todo collision : only thing that can be problem is that oldbase has world collision on
 				bool bMustJump = bZeroDelta || (OldBase == nullptr || (!OldBase->IsQueryCollisionEnabled() && MovementBaseUtility::IsDynamicBase(OldBase)));
-				if ( (bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump) )
+				if ((bMustJump || !bCheckedFall) && CheckFall(OldFloor, CurrentFloor.HitResult, Delta, OldLocation, remainingTime, timeTick, Iterations, bMustJump))
 				{
 					return;
 				}
@@ -984,7 +994,7 @@ void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Itera
 			}
 
 			// check if just entered water
-			if ( IsSwimming() )
+			if (IsSwimming())
 			{
 				StartSwimming(OldLocation, Velocity, timeTick, remainingTime, Iterations);
 				return;
