@@ -664,7 +664,7 @@ private:
 	/**
 	 * Handles logic when exiting slide. Resets crouch flags and re-enables rotation to movement.
 	 */
-	void ExitSlide();
+	FORCEINLINE void ExitSlide();
 
 	/**
 	 * Checks if conditions are met to start sliding (adequate speed, valid floor, etc.).
@@ -682,7 +682,7 @@ private:
 	/**
 	 * Called when the player tries to enter prone. We set Safe_bWantsToProne to true for the next check.
 	 */
-	void OnTryEnterProne() { Safe_bWantsToProne = true; }
+	FORCEINLINE void OnTryEnterProne() { Safe_bWantsToProne = true; }
 
 	/**
 	 * Server RPC to confirm entering prone. Avoids cheating or mismatch across clients/servers.
@@ -700,13 +700,13 @@ private:
 	/**
 	 * Handles logic when exiting prone. Typically just resets any flags.
 	 */
-	void ExitProne();
+	FORCEINLINE void ExitProne();
 
 	/**
 	 * Checks conditions to transition into prone. Generally requires the character to be sliding or walking + crouching.
 	 * @return True if the character can prone.
 	 */
-	bool CanProne() const;
+	FORCEINLINE bool CanProne() const;
 
 	/**
 	 * Physics logic for proning, including custom deceleration, friction, or transitions out of prone.
@@ -719,13 +719,13 @@ private:
 	 * Called after the dash button is pressed while dash is on cooldown. 
 	 * When this finishes, Safe_bWantsToDash is set to true so the character can dash again.
 	 */
-	void OnDashCooldownFinished();
+	FORCEINLINE void OnDashCooldownFinished();
 
 	/**
 	 * Checks if the character can start a dash (e.g., not crouched, or is falling).
 	 * @return True if conditions are valid for a dash.
 	 */
-	bool CanDash() const;
+	FORCEINLINE bool CanDash() const;
 
 	/**
 	 * Actually executes the dash by setting flying mode, playing the montage, 
@@ -788,17 +788,17 @@ private:
 	/**
 	 * @return True if this component is currently on the server (HasAuthority).
 	 */
-	bool IsServer() const;
+	FORCEINLINE bool IsServer() const;
 
 	/**
 	 * @return The capsule radius of the owning character.
 	 */
-	float CapR() const;
+	FORCEINLINE float CapR() const;
 
 	/**
 	 * @return The capsule half-height of the owning character.
 	 */
-	float CapHH() const;
+	FORCEINLINE float CapHH() const;
 
 public:
 
@@ -806,63 +806,63 @@ public:
 	 * Signals that the player wants to sprint. Sets the Safe_bWantsToSprint flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StartSprint();
+	FORCEINLINE void StartSprint();
 
 	/**
 	 * Signals that the player released sprint. Unsets the Safe_bWantsToSprint flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StopSprint();
+	FORCEINLINE void StopSprint();
 
 	/**
 	 * Signals that the player wants to slide. Sets the Safe_bWantsToSlide flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StartSlide();
+	FORCEINLINE void StartSlide();
 
 	/**
 	 * Signals that the player no longer wants to slide. Unsets the Safe_bWantsToSlide flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StopSlide();
+	FORCEINLINE void StopSlide();
 
-	/**
+	/** @TODO Replace this function by just overriding the Crouch/Uncrouch function in the character class.
 	 * Toggles crouch and sets a timer to enter prone if crouch is held long enough.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StartCrouch();
+	FORCEINLINE void StartCrouch();
 
-	/**
+	/** @TODO Replace this function by just overriding the Crouch/Uncrouch function in the character class.
 	 * Cancels the timer for entering prone if crouch is released.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StopCrouch();
+	FORCEINLINE void StopCrouch();
 
 	/**
 	 * Initiates dash logic if not on cooldown, or starts a timer to try again 
 	 * if the cooldown will expire soon.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StartDash();
+	FORCEINLINE void StartDash();
 
 	/**
 	 * Clears the dash cooldown timer, unsets the dash flag if dash input is released.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StopDash();
+	FORCEINLINE void StopDash();
 
 	/**
 	 * Signals that the player wants to climb or continue climbing if possible. 
 	 * Sets bWantsToCrouch if in midair or already climbing.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StartClimb();
+	FORCEINLINE void StartClimb();
 
 	/**
 	 * Unsets bWantsToCrouch, effectively stopping climb/hang if pressed.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StopClimb();
+	FORCEINLINE void StopClimb();
 
 	/**
 	 * Checks if we’re in a specific custom movement mode.
@@ -870,7 +870,7 @@ public:
 	 * @return True if currently in that custom mode.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
+	FORCEINLINE bool IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const;
 
 	/**
 	 * Checks if we’re in a specific standard movement mode (walking, falling, etc.).
@@ -878,31 +878,31 @@ public:
 	 * @return True if currently in that mode.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool IsMovementMode(EMovementMode InMovementMode) const;
+	FORCEINLINE bool IsMovementMode(EMovementMode InMovementMode) const;
 
 	/**
 	 * @return True if we are currently in wall run mode.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool IsWallRunning() const { return IsCustomMovementMode(CMOVE_WallRun); }
+	FORCEINLINE bool IsWallRunning() const { return IsCustomMovementMode(CMOVE_WallRun); }
 
 	/**
 	 * @return True if the wall we’re running along is on our right side.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool WallRunningIsRight() const { return Safe_bWallRunIsRight; }
+	FORCEINLINE bool WallRunningIsRight() const { return Safe_bWallRunIsRight; }
 
 	/**
 	 * @return True if we are currently in hanging mode.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool IsHanging() const { return IsCustomMovementMode(CMOVE_Hang); }
+	FORCEINLINE bool IsHanging() const { return IsCustomMovementMode(CMOVE_Hang); }
 
 	/**
 	 * @return True if we are currently in climbing mode.
 	 */
 	UFUNCTION(BlueprintPure)
-	bool IsClimbing() const { return IsCustomMovementMode(CMOVE_Climb); }
+	FORCEINLINE bool IsClimbing() const { return IsCustomMovementMode(CMOVE_Climb); }
 
 public:
 
