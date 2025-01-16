@@ -8,5 +8,5 @@ class UCameraComponent;
 
 // Zippy Classes
 class AZippyCharacter;
-class UZippyCharacterMovementComponent;
+class USurvivalCharacterMovementComponent;
 class AZippyCameraManager;

@@ -1,7 +1,7 @@
 #include "ZippyCameraManager.h"
 
 #include "ZippyCharacter.h"
-#include "ZippyCharacterMovementComponent.h"
+#include "SurvivalCharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 
 
@@ -15,7 +15,7 @@ void AZippyCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime)
 
 	if (AZippyCharacter* ZippyCharacter = Cast<AZippyCharacter>(GetOwningPlayerController()->GetPawn()))
 	{
-		UZippyCharacterMovementComponent* ZMC = ZippyCharacter->GetZippyCharacterMovement();
+		USurvivalCharacterMovementComponent* ZMC = ZippyCharacter->GetZippyCharacterMovement();
 		FVector TargetCrouchOffset = FVector(
 			0,
 			0,

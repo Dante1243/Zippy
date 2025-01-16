@@ -1,4 +1,4 @@
-#include "ZippyCharacterMovementComponent.h"
+#include "SurvivalCharacterMovementComponent.h"
 
 #include "ZippyCharacter.h"
 #include "Components/CapsuleComponent.h"
@@ -7,7 +7,7 @@
 #include "Net/UnrealNetwork.h"
 
 // Helper Macros
-#if 1
+#if 0
 float MacroDuration = 2.f;
 #define SLOG(x) GEngine->AddOnScreenDebugMessage(-1, MacroDuration ? MacroDuration : -1.f, FColor::Yellow, x);
 #define POINT(x, c) DrawDebugPoint(GetWorld(), x, 10, c, !MacroDuration, MacroDuration);
@@ -25,7 +25,7 @@ float MacroDuration = 2.f;
 
 #pragma region Saved Move
 
-UZippyCharacterMovementComponent::FSavedMove_Zippy::FSavedMove_Zippy()
+USurvivalCharacterMovementComponent::FSavedMove_SurvivalCharacter::FSavedMove_SurvivalCharacter()
 {
 	Saved_bWantsToSprint=0;
 	Saved_bWantsToSlide=0;
@@ -33,23 +33,23 @@ UZippyCharacterMovementComponent::FSavedMove_Zippy::FSavedMove_Zippy()
 	Saved_bPrevWantsToCrouch=0;
 }
 
-bool UZippyCharacterMovementComponent::FSavedMove_Zippy::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const
+bool USurvivalCharacterMovementComponent::FSavedMove_SurvivalCharacter::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const
 {
-	const FSavedMove_Zippy* NewZippyMove = static_cast<FSavedMove_Zippy*>(NewMove.Get());
+	const FSavedMove_SurvivalCharacter* NewSurvivalMove = static_cast<FSavedMove_SurvivalCharacter*>(NewMove.Get());
 
-	if (Saved_bWantsToSprint != NewZippyMove->Saved_bWantsToSprint)
+	if (Saved_bWantsToSprint != NewSurvivalMove->Saved_bWantsToSprint)
 	{
 		return false;
 	}
-	if (Saved_bWantsToSlide != NewZippyMove->Saved_bWantsToSlide)
+	if (Saved_bWantsToSlide != NewSurvivalMove->Saved_bWantsToSlide)
 	{
 		return false;
 	}
-	if (Saved_bWantsToDash != NewZippyMove->Saved_bWantsToDash)
+	if (Saved_bWantsToDash != NewSurvivalMove->Saved_bWantsToDash)
 	{
 		return false;
 	}
-	if (Saved_bWallRunIsRight != NewZippyMove->Saved_bWallRunIsRight)
+	if (Saved_bWallRunIsRight != NewSurvivalMove->Saved_bWallRunIsRight)
 	{
 		return false;
 	}
@@ -57,7 +57,7 @@ bool UZippyCharacterMovementComponent::FSavedMove_Zippy::CanCombineWith(const FS
 	return FSavedMove_Character::CanCombineWith(NewMove, InCharacter, MaxDelta);
 }
 
-void UZippyCharacterMovementComponent::FSavedMove_Zippy::Clear()
+void USurvivalCharacterMovementComponent::FSavedMove_SurvivalCharacter::Clear()
 {
 	FSavedMove_Character::Clear();
 
@@ -75,7 +75,7 @@ void UZippyCharacterMovementComponent::FSavedMove_Zippy::Clear()
 	Saved_bWallRunIsRight = 0;
 }
 
-uint8 UZippyCharacterMovementComponent::FSavedMove_Zippy::GetCompressedFlags() const
+uint8 USurvivalCharacterMovementComponent::FSavedMove_SurvivalCharacter::GetCompressedFlags() const
 {
 	uint8 Result = FSavedMove_Character::GetCompressedFlags();
 
@@ -87,11 +87,11 @@ uint8 UZippyCharacterMovementComponent::FSavedMove_Zippy::GetCompressedFlags() c
 	return Result;
 }
 
-void UZippyCharacterMovementComponent::FSavedMove_Zippy::SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
+void USurvivalCharacterMovementComponent::FSavedMove_SurvivalCharacter::SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
 {
 	FSavedMove_Character::SetMoveFor(C, InDeltaTime, NewAccel, ClientData);
 	
-	const UZippyCharacterMovementComponent* CharacterMovement = Cast<UZippyCharacterMovementComponent>(C->GetCharacterMovement());
+	const USurvivalCharacterMovementComponent* CharacterMovement = Cast<USurvivalCharacterMovementComponent>(C->GetCharacterMovement());
 
 	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
 	Saved_bWantsToSlide = CharacterMovement->Safe_bWantsToSlide;
@@ -107,11 +107,11 @@ void UZippyCharacterMovementComponent::FSavedMove_Zippy::SetMoveFor(ACharacter* 
 	Saved_bWallRunIsRight = CharacterMovement->Safe_bWallRunIsRight;
 }
 
-void UZippyCharacterMovementComponent::FSavedMove_Zippy::PrepMoveFor(ACharacter* C)
+void USurvivalCharacterMovementComponent::FSavedMove_SurvivalCharacter::PrepMoveFor(ACharacter* C)
 {
 	FSavedMove_Character::PrepMoveFor(C);
 
-	UZippyCharacterMovementComponent* CharacterMovement = Cast<UZippyCharacterMovementComponent>(C->GetCharacterMovement());
+	USurvivalCharacterMovementComponent* CharacterMovement = Cast<USurvivalCharacterMovementComponent>(C->GetCharacterMovement());
 
 	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
 	CharacterMovement->Safe_bWantsToSlide = Saved_bWantsToSlide;
@@ -131,25 +131,25 @@ void UZippyCharacterMovementComponent::FSavedMove_Zippy::PrepMoveFor(ACharacter*
 
 #pragma region Client Network Prediction Data
 
-UZippyCharacterMovementComponent::FNetworkPredictionData_Client_Zippy::FNetworkPredictionData_Client_Zippy(const UCharacterMovementComponent& ClientMovement)
+USurvivalCharacterMovementComponent::FNetworkPredictionData_Client_SurvivalCharacter::FNetworkPredictionData_Client_SurvivalCharacter(const UCharacterMovementComponent& ClientMovement)
 : Super(ClientMovement)
 {
 }
 
-FSavedMovePtr UZippyCharacterMovementComponent::FNetworkPredictionData_Client_Zippy::AllocateNewMove()
+FSavedMovePtr USurvivalCharacterMovementComponent::FNetworkPredictionData_Client_SurvivalCharacter::AllocateNewMove()
 {
-	return FSavedMovePtr(new FSavedMove_Zippy());
+	return FSavedMovePtr(new FSavedMove_SurvivalCharacter());
 }
 
 #pragma endregion
 
-UZippyCharacterMovementComponent::UZippyCharacterMovementComponent()
+USurvivalCharacterMovementComponent::USurvivalCharacterMovementComponent()
 {
 	NavAgentProps.bCanCrouch = true;
-	ZippyServerMoveBitWriter.SetAllowResize(true);
+	SurvivalServerMoveBitWriter.SetAllowResize(true);
 }
 
-void UZippyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void USurvivalCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -167,7 +167,7 @@ void UZippyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick
 
 #pragma region CMC
 
-void UZippyCharacterMovementComponent::InitializeComponent()
+void USurvivalCharacterMovementComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
@@ -175,16 +175,16 @@ void UZippyCharacterMovementComponent::InitializeComponent()
 }
 
 // Network
-void UZippyCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
+void USurvivalCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 {
 	Super::UpdateFromCompressedFlags(Flags);
 
-	Safe_bWantsToSprint = (Flags & FSavedMove_Zippy::FLAG_Sprint) != 0;
-	Safe_bWantsToDash = (Flags & FSavedMove_Zippy::FLAG_Dash) != 0;
-	Safe_bWantsToSlide = (Flags & FSavedMove_Zippy::FLAG_Slide) != 0;
+	Safe_bWantsToSprint = (Flags & FSavedMove_SurvivalCharacter::FLAG_Sprint) != 0;
+	Safe_bWantsToDash = (Flags & FSavedMove_SurvivalCharacter::FLAG_Dash) != 0;
+	Safe_bWantsToSlide = (Flags & FSavedMove_SurvivalCharacter::FLAG_Slide) != 0;
 }
 
-void UZippyCharacterMovementComponent::OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData,
+void USurvivalCharacterMovementComponent::OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData,
 float TimeStamp, FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName,
 bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode, FVector ServerGravityDirection)
 {
@@ -195,30 +195,30 @@ bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode, FVector Ser
 }
 
 
-FNetworkPredictionData_Client* UZippyCharacterMovementComponent::GetPredictionData_Client() const
+FNetworkPredictionData_Client* USurvivalCharacterMovementComponent::GetPredictionData_Client() const
 {
 	check(PawnOwner != nullptr)
 
 	if (ClientPredictionData == nullptr)
 	{
-		UZippyCharacterMovementComponent* MutableThis = const_cast<UZippyCharacterMovementComponent*>(this);
+		USurvivalCharacterMovementComponent* MutableThis = const_cast<USurvivalCharacterMovementComponent*>(this);
 
-		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_Zippy(*this);
+		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_SurvivalCharacter(*this);
 		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
 		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f; 
 	}
 	return ClientPredictionData;
 }
 // Getters / Helpers
-bool UZippyCharacterMovementComponent::IsMovingOnGround() const
+bool USurvivalCharacterMovementComponent::IsMovingOnGround() const
 {
 	return Super::IsMovingOnGround() || IsCustomMovementMode(CMOVE_Slide) || IsCustomMovementMode(CMOVE_Prone);
 }
-bool UZippyCharacterMovementComponent::CanCrouchInCurrentState() const
+bool USurvivalCharacterMovementComponent::CanCrouchInCurrentState() const
 {
 	return Super::CanCrouchInCurrentState() && IsMovingOnGround();
 }
-float UZippyCharacterMovementComponent::GetMaxSpeed() const
+float USurvivalCharacterMovementComponent::GetMaxSpeed() const
 {
 	if (IsMovementMode(MOVE_Walking) && Safe_bWantsToSprint && !IsCrouching()) return MaxSprintSpeed;
 	
@@ -241,7 +241,7 @@ float UZippyCharacterMovementComponent::GetMaxSpeed() const
 		return -1.f;
 	}
 }
-float UZippyCharacterMovementComponent::GetMaxBrakingDeceleration() const
+float USurvivalCharacterMovementComponent::GetMaxBrakingDeceleration() const
 {
 	if (MovementMode != MOVE_Custom) return Super::GetMaxBrakingDeceleration();
 
@@ -263,12 +263,12 @@ float UZippyCharacterMovementComponent::GetMaxBrakingDeceleration() const
 	}
 }
 
-bool UZippyCharacterMovementComponent::CanAttemptJump() const
+bool USurvivalCharacterMovementComponent::CanAttemptJump() const
 {
 	return Super::CanAttemptJump() || IsWallRunning() || IsHanging() || IsClimbing();
 }
 
-bool UZippyCharacterMovementComponent::DoJump(bool bReplayingMoves)
+bool USurvivalCharacterMovementComponent::DoJump(bool bReplayingMoves)
 {
 	bool bWasWallRunning = IsWallRunning();
 	bool bWasOnWall = IsHanging() || IsClimbing();
@@ -301,7 +301,7 @@ bool UZippyCharacterMovementComponent::DoJump(bool bReplayingMoves)
 
 
 // Movement Pipeline
-void UZippyCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
+void USurvivalCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
 	// Slide
 	if (MovementMode == MOVE_Walking && Safe_bWantsToSlide)
@@ -359,7 +359,7 @@ void UZippyCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float 
 	// Try Mantle
 	if (ZippyCharacterOwner->bPressedZippyJump)
 	{
-		SLOG("Trying Zippyjump")
+		SLOG("Trying jump")
 		if (TryMantle())
 		{
 			ZippyCharacterOwner->StopJumping();		
@@ -422,7 +422,7 @@ void UZippyCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float 
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
 }
 
-void UZippyCharacterMovementComponent::UpdateCharacterStateAfterMovement(float DeltaSeconds)
+void USurvivalCharacterMovementComponent::UpdateCharacterStateAfterMovement(float DeltaSeconds)
 {
 	Super::UpdateCharacterStateAfterMovement(DeltaSeconds);
 
@@ -442,7 +442,7 @@ void UZippyCharacterMovementComponent::UpdateCharacterStateAfterMovement(float D
 	Safe_bHadAnimRootMotion = HasAnimRootMotion();
 }
 
-void UZippyCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
+void USurvivalCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
 	Super::PhysCustom(deltaTime, Iterations);
 
@@ -466,7 +466,7 @@ void UZippyCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterati
 		UE_LOG(LogTemp, Fatal, TEXT("Invalid Movement Mode"))
 	}
 }
-void UZippyCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
+void USurvivalCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
 {
 	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
 	
@@ -474,7 +474,7 @@ void UZippyCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, con
 }
 
 // Movement Event
-void UZippyCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+void USurvivalCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 
@@ -499,7 +499,7 @@ void UZippyCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 	}
 }
 
-bool UZippyCharacterMovementComponent::ServerCheckClientError(float ClientTimeStamp, float DeltaTime,
+bool USurvivalCharacterMovementComponent::ServerCheckClientError(float ClientTimeStamp, float DeltaTime,
 	const FVector& Accel, const FVector& ClientWorldLocation, const FVector& RelativeClientLocation,
 	UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode)
 {
@@ -519,7 +519,7 @@ bool UZippyCharacterMovementComponent::ServerCheckClientError(float ClientTimeSt
 }
 
 
-void UZippyCharacterMovementComponent::CallServerMovePacked(const FSavedMove_Character* NewMove, const FSavedMove_Character* PendingMove, const FSavedMove_Character* OldMove)
+void USurvivalCharacterMovementComponent::CallServerMovePacked(const FSavedMove_Character* NewMove, const FSavedMove_Character* PendingMove, const FSavedMove_Character* OldMove)
 {
 	// Get storage container we'll be using and fill it with movement data
 	FCharacterNetworkMoveDataContainer& MoveDataContainer = GetNetworkMoveDataContainer();
@@ -527,7 +527,7 @@ void UZippyCharacterMovementComponent::CallServerMovePacked(const FSavedMove_Cha
 
 	// Reset bit writer without affecting allocations
 	FBitWriterMark BitWriterReset;
-	BitWriterReset.Pop(ZippyServerMoveBitWriter);
+	BitWriterReset.Pop(SurvivalServerMoveBitWriter);
 
 	// 'static' to avoid reallocation each invocation
 	static FCharacterServerMovePackedBits PackedBits;
@@ -535,27 +535,27 @@ void UZippyCharacterMovementComponent::CallServerMovePacked(const FSavedMove_Cha
 	{
 		const UNetConnection* NetConnection = CharacterOwner->GetNetConnection();
 		// Extract the net package map used for serializing object references.
-		ZippyServerMoveBitWriter.PackageMap = NetConnection ? ToRawPtr(NetConnection->PackageMap) : nullptr;
+		SurvivalServerMoveBitWriter.PackageMap = NetConnection ? ToRawPtr(NetConnection->PackageMap) : nullptr;
 	}
 
-	if (ZippyServerMoveBitWriter.PackageMap == nullptr)
+	if (SurvivalServerMoveBitWriter.PackageMap == nullptr)
 	{
 		UE_LOG(LogNetPlayerMovement, Error, TEXT("CallServerMovePacked: Failed to find a NetConnection/PackageMap for data serialization!"));
 		return;
 	}
 
 	// Serialize move struct into a bit stream
-	if (!MoveDataContainer.Serialize(*this, ZippyServerMoveBitWriter, ZippyServerMoveBitWriter.PackageMap) || ZippyServerMoveBitWriter.IsError())
+	if (!MoveDataContainer.Serialize(*this, SurvivalServerMoveBitWriter, SurvivalServerMoveBitWriter.PackageMap) || SurvivalServerMoveBitWriter.IsError())
 	{
 		UE_LOG(LogNetPlayerMovement, Error, TEXT("CallServerMovePacked: Failed to serialize out movement data!"));
 		return;
 	}
 
 	// Copy bits to our struct that we can NetSerialize to the server.
-	PackedBits.DataBits.SetNumUninitialized(ZippyServerMoveBitWriter.GetNumBits());
+	PackedBits.DataBits.SetNumUninitialized(SurvivalServerMoveBitWriter.GetNumBits());
 	
-	check(PackedBits.DataBits.Num() >= ZippyServerMoveBitWriter.GetNumBits());
-	FMemory::Memcpy(PackedBits.DataBits.GetData(), ZippyServerMoveBitWriter.GetData(), ZippyServerMoveBitWriter.GetNumBytes());
+	check(PackedBits.DataBits.Num() >= SurvivalServerMoveBitWriter.GetNumBits());
+	FMemory::Memcpy(PackedBits.DataBits.GetData(), SurvivalServerMoveBitWriter.GetData(), SurvivalServerMoveBitWriter.GetNumBytes());
 
 	TotalBitsSent += PackedBits.DataBits.Num();
 
@@ -569,7 +569,7 @@ void UZippyCharacterMovementComponent::CallServerMovePacked(const FSavedMove_Cha
 
 #pragma region Slide
 
-void UZippyCharacterMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
+void USurvivalCharacterMovementComponent::EnterSlide(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
 	bWantsToCrouch = true;
 	bOrientRotationToMovement = false;
@@ -582,13 +582,13 @@ void UZippyCharacterMovementComponent::EnterSlide(EMovementMode PrevMode, ECusto
 
 	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, nullptr);
 }
-void UZippyCharacterMovementComponent::ExitSlide()
+void USurvivalCharacterMovementComponent::ExitSlide()
 {
 	Safe_bWantsToSlide = false;
 	bWantsToCrouch = false;
 	bOrientRotationToMovement = true;
 }
-bool UZippyCharacterMovementComponent::CanSlide() const
+bool USurvivalCharacterMovementComponent::CanSlide() const
 {
 	FVector Start = UpdatedComponent->GetComponentLocation();
 	FVector End = Start + CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2.5f * FVector::DownVector;
@@ -599,7 +599,7 @@ bool UZippyCharacterMovementComponent::CanSlide() const
 	return bValidSurface && bEnoughSpeed;
 }
 
-void UZippyCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iterations)
+void USurvivalCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
 	{
@@ -809,12 +809,12 @@ void UZippyCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iteratio
 
 #pragma region Prone
 
-void UZippyCharacterMovementComponent::Server_EnterProne_Implementation()
+void USurvivalCharacterMovementComponent::Server_EnterProne_Implementation()
 {
 	Safe_bWantsToProne = true;
 }
 
-void UZippyCharacterMovementComponent::EnterProne(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
+void USurvivalCharacterMovementComponent::EnterProne(EMovementMode PrevMode, ECustomMovementMode PrevCustomMode)
 {
 	bWantsToCrouch = true;
 
@@ -825,16 +825,16 @@ void UZippyCharacterMovementComponent::EnterProne(EMovementMode PrevMode, ECusto
 
 	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, nullptr);
 }
-void UZippyCharacterMovementComponent::ExitProne()
+void USurvivalCharacterMovementComponent::ExitProne()
 {
 }
 
-bool UZippyCharacterMovementComponent::CanProne() const
+bool USurvivalCharacterMovementComponent::CanProne() const
 {
 	return IsCustomMovementMode(CMOVE_Slide) || IsMovementMode(MOVE_Walking) && IsCrouching();
 }
 
-void UZippyCharacterMovementComponent::PhysProne(float deltaTime, int32 Iterations)
+void USurvivalCharacterMovementComponent::PhysProne(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
 	{
@@ -1025,17 +1025,17 @@ void UZippyCharacterMovementComponent::PhysProne(float deltaTime, int32 Iteratio
 
 #pragma region Dash
 
-void UZippyCharacterMovementComponent::OnDashCooldownFinished()
+void USurvivalCharacterMovementComponent::OnDashCooldownFinished()
 {
 	Safe_bWantsToDash = true;
 }
 
-bool UZippyCharacterMovementComponent::CanDash() const
+bool USurvivalCharacterMovementComponent::CanDash() const
 {
 	return IsWalking() && !IsCrouching() || IsFalling();
 }
 
-void UZippyCharacterMovementComponent::PerformDash()
+void USurvivalCharacterMovementComponent::PerformDash()
 {
 	DashStartTime = GetWorld()->GetTimeSeconds();
 	
@@ -1050,7 +1050,7 @@ void UZippyCharacterMovementComponent::PerformDash()
 
 #pragma region Mantle
 
-bool UZippyCharacterMovementComponent::TryMantle()
+bool USurvivalCharacterMovementComponent::TryMantle()
 {
 	if (!(IsMovementMode(MOVE_Walking) && !IsCrouching()) && !IsMovementMode(MOVE_Falling)) return false;
 
@@ -1178,7 +1178,7 @@ SLOG(FString::Printf(TEXT("Duration: %f"), TransitionRMS->Duration))
 	return true;
 }
 
-FVector UZippyCharacterMovementComponent::GetMantleStartLocation(FHitResult FrontHit, FHitResult SurfaceHit, bool bTallMantle) const
+FVector USurvivalCharacterMovementComponent::GetMantleStartLocation(FHitResult FrontHit, FHitResult SurfaceHit, bool bTallMantle) const
 {
 	float CosWallSteepnessAngle = FrontHit.Normal | FVector::UpVector;
 	float DownDistance = bTallMantle ? CapHH() * 2.f : MaxStepHeight - 1;
@@ -1198,7 +1198,7 @@ FVector UZippyCharacterMovementComponent::GetMantleStartLocation(FHitResult Fron
 
 
 #pragma region Wall Run
-bool UZippyCharacterMovementComponent::TryWallRun()
+bool USurvivalCharacterMovementComponent::TryWallRun()
 {
 	if (!IsFalling()) return false;
 	if (Velocity.SizeSquared2D() < pow(MinWallRunSpeed, 2)) return false;
@@ -1244,7 +1244,7 @@ SLOG("Starting WallRun")
 	return true;
 }
 
-void UZippyCharacterMovementComponent::PhysWallRun(float deltaTime, int32 Iterations)
+void USurvivalCharacterMovementComponent::PhysWallRun(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
 	{
@@ -1333,7 +1333,7 @@ void UZippyCharacterMovementComponent::PhysWallRun(float deltaTime, int32 Iterat
 	}
 }
 
-bool UZippyCharacterMovementComponent::TryHang()
+bool USurvivalCharacterMovementComponent::TryHang()
 {
 	if (!IsMovementMode(MOVE_Falling)) return false;
 
@@ -1410,7 +1410,7 @@ bool UZippyCharacterMovementComponent::TryHang()
 	return true;
 }
 
-bool UZippyCharacterMovementComponent::TryClimb()
+bool USurvivalCharacterMovementComponent::TryClimb()
 {
 	if (!IsFalling()) return false;
 
@@ -1430,7 +1430,7 @@ bool UZippyCharacterMovementComponent::TryClimb()
 	return true;
 }
 
-void UZippyCharacterMovementComponent::PhysClimb(float deltaTime, int32 Iterations)
+void USurvivalCharacterMovementComponent::PhysClimb(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
 	{
@@ -1482,17 +1482,17 @@ void UZippyCharacterMovementComponent::PhysClimb(float deltaTime, int32 Iteratio
 
 #pragma region Helpers
 
-bool UZippyCharacterMovementComponent::IsServer() const
+bool USurvivalCharacterMovementComponent::IsServer() const
 {
 	return CharacterOwner->HasAuthority();
 }
 
-float UZippyCharacterMovementComponent::CapR() const
+float USurvivalCharacterMovementComponent::CapR() const
 {
 	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleRadius();
 }
 
-float UZippyCharacterMovementComponent::CapHH() const
+float USurvivalCharacterMovementComponent::CapHH() const
 {
 	return CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 }
@@ -1501,36 +1501,36 @@ float UZippyCharacterMovementComponent::CapHH() const
 
 #pragma region Interface
 
-void UZippyCharacterMovementComponent::SprintPressed()
+void USurvivalCharacterMovementComponent::StartSprint()
 {
 	Safe_bWantsToSprint = true;
 }
-void UZippyCharacterMovementComponent::SprintReleased()
+void USurvivalCharacterMovementComponent::StopSprint()
 {
 	Safe_bWantsToSprint = false;
 }
 
-void UZippyCharacterMovementComponent::SlidePressed()
+void USurvivalCharacterMovementComponent::StartSlide()
 {
 	Safe_bWantsToSlide = true;
 }
 
-void UZippyCharacterMovementComponent::SlideReleased()
+void USurvivalCharacterMovementComponent::StopSlide()
 {
 	Safe_bWantsToSlide = false;
 }
 
-void UZippyCharacterMovementComponent::CrouchPressed()
+void USurvivalCharacterMovementComponent::StartCrouch()
 {
 	bWantsToCrouch = !bWantsToCrouch;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne, this, &UZippyCharacterMovementComponent::OnTryEnterProne, ProneEnterHoldDuration);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_EnterProne, this, &USurvivalCharacterMovementComponent::OnTryEnterProne, ProneEnterHoldDuration);
 }
-void UZippyCharacterMovementComponent::CrouchReleased()
+void USurvivalCharacterMovementComponent::StopCrouch()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_EnterProne);
 }
 
-void UZippyCharacterMovementComponent::DashPressed()
+void USurvivalCharacterMovementComponent::StartDash()
 {
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - DashStartTime >= DashCooldownDuration)
@@ -1539,30 +1539,30 @@ void UZippyCharacterMovementComponent::DashPressed()
 	}
 	else
 	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown, this, &UZippyCharacterMovementComponent::OnDashCooldownFinished, DashCooldownDuration - (CurrentTime - DashStartTime));
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown, this, &USurvivalCharacterMovementComponent::OnDashCooldownFinished, DashCooldownDuration - (CurrentTime - DashStartTime));
 	}
 }
-void UZippyCharacterMovementComponent::DashReleased()
+void USurvivalCharacterMovementComponent::StopDash()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_DashCooldown);
 	Safe_bWantsToDash = false;
 }
 
-void UZippyCharacterMovementComponent::ClimbPressed()
+void USurvivalCharacterMovementComponent::StartClimb()
 {
 	if (IsFalling() || IsClimbing() || IsHanging()) bWantsToCrouch = true;
 }
 
-void UZippyCharacterMovementComponent::ClimbReleased()
+void USurvivalCharacterMovementComponent::StopClimb()
 {
 	bWantsToCrouch = false;
 }
 
-bool UZippyCharacterMovementComponent::IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const
+bool USurvivalCharacterMovementComponent::IsCustomMovementMode(ECustomMovementMode InCustomMovementMode) const
 {
 	return MovementMode == MOVE_Custom && CustomMovementMode == InCustomMovementMode;
 }
-bool UZippyCharacterMovementComponent::IsMovementMode(EMovementMode InMovementMode) const
+bool USurvivalCharacterMovementComponent::IsMovementMode(EMovementMode InMovementMode) const
 {
 	return InMovementMode == MovementMode;
 }
@@ -1571,28 +1571,28 @@ bool UZippyCharacterMovementComponent::IsMovementMode(EMovementMode InMovementMo
 
 #pragma region Replication
 
-void UZippyCharacterMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void USurvivalCharacterMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(UZippyCharacterMovementComponent, Proxy_bDash, COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(USurvivalCharacterMovementComponent, Proxy_bDash, COND_SkipOwner)
 	
-	DOREPLIFETIME_CONDITION(UZippyCharacterMovementComponent, Proxy_bShortMantle, COND_SkipOwner)
-	DOREPLIFETIME_CONDITION(UZippyCharacterMovementComponent, Proxy_bTallMantle, COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(USurvivalCharacterMovementComponent, Proxy_bShortMantle, COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(USurvivalCharacterMovementComponent, Proxy_bTallMantle, COND_SkipOwner)
 }
 
-void UZippyCharacterMovementComponent::OnRep_Dash()
+void USurvivalCharacterMovementComponent::OnRep_Dash()
 {
 	CharacterOwner->PlayAnimMontage(DashMontage);
     DashStartDelegate.Broadcast();
 }
 
-void UZippyCharacterMovementComponent::OnRep_ShortMantle()
+void USurvivalCharacterMovementComponent::OnRep_ShortMantle()
 {
 	CharacterOwner->PlayAnimMontage(ProxyShortMantleMontage);
 }
 
-void UZippyCharacterMovementComponent::OnRep_TallMantle()
+void USurvivalCharacterMovementComponent::OnRep_TallMantle()
 {
 	CharacterOwner->PlayAnimMontage(ProxyTallMantleMontage);
 }

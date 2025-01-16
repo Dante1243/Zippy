@@ -12,7 +12,7 @@ class AZippyCharacter : public ACharacter
 
 	// Components
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Movement) UZippyCharacterMovementComponent* ZippyCharacterMovementComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Movement) USurvivalCharacterMovementComponent* ZippyCharacterMovementComponent;
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true")) USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true")) UCameraComponent* FollowCamera;
@@ -46,7 +46,7 @@ protected:
 public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-	UFUNCTION(BlueprintPure) FORCEINLINE UZippyCharacterMovementComponent* GetZippyCharacterMovement() const { return ZippyCharacterMovementComponent; }
+	UFUNCTION(BlueprintPure) FORCEINLINE USurvivalCharacterMovementComponent* GetZippyCharacterMovement() const { return ZippyCharacterMovementComponent; }
 
 	FCollisionQueryParams GetIgnoreCharacterParams() const;
 

@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Zippy.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "ZippyCharacterMovementComponent.generated.h"
+#include "SurvivalCharacterMovementComponent.generated.h"
 
 /**
  * Delegate broadcast when the character starts a dash. 
@@ -58,9 +58,12 @@ enum ECustomMovementMode
  * Custom Character Movement Component that extends UCharacterMovementComponent
  * with additional movement modes (slide, prone, wallrun, etc.) and functionalities
  * (dash, mantle, etc.).
+ * Safe variable are vars that are synced from client to server and are also synced on a correction safe variables
+ * should be used for anything that's important to reproduce the same movement on the server and should be saved into a saved move.
+ * Compressed flags are the actual data sent to the server.
  */
 UCLASS()
-class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComponent
+class ZIPPY_API USurvivalCharacterMovementComponent : public UCharacterMovementComponent
 {
 	GENERATED_BODY()
 
@@ -68,7 +71,7 @@ class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComp
 	 * A saved move struct for custom movement, extending FSavedMove_Character
 	 * to store extra flags like sprint, dash, slide, etc.
 	 */
-	class FSavedMove_Zippy : public FSavedMove_Character
+	class FSavedMove_SurvivalCharacter : public FSavedMove_Character
 	{
 	public:
 
@@ -92,10 +95,10 @@ class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComp
 		};
 
 		/**
-		 * Default constructor for FSavedMove_Zippy.
+		 * Default constructor for FSavedMove_SurvivalCharacter.
 		 * Initializes all custom movement flags to zero.
 		 */
-		FSavedMove_Zippy();
+		FSavedMove_SurvivalCharacter();
 
 		/**
 		 * Returns whether this saved move can be combined with another
@@ -165,9 +168,9 @@ class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComp
 	};
 
 	/**
-	 * Custom prediction data container for client moves, allocating FSavedMove_Zippy.
+	 * Custom prediction data container for client moves, allocating FSavedMove_SurvivalCharacter.
 	 */
-	class FNetworkPredictionData_Client_Zippy : public FNetworkPredictionData_Client_Character
+	class FNetworkPredictionData_Client_SurvivalCharacter : public FNetworkPredictionData_Client_Character
 	{
 	public:
 		
@@ -176,12 +179,12 @@ class ZIPPY_API UZippyCharacterMovementComponent : public UCharacterMovementComp
 		 * to the parent class.
 		 * @param ClientMovement The movement component on this client.
 		 */
-		FNetworkPredictionData_Client_Zippy(const UCharacterMovementComponent& ClientMovement);
+		FNetworkPredictionData_Client_SurvivalCharacter(const UCharacterMovementComponent& ClientMovement);
 
 		typedef FNetworkPredictionData_Client_Character Super;
 
 		/**
-		 * Allocates a new FSavedMove_Zippy for capturing
+		 * Allocates a new FSavedMove_SurvivalCharacter for capturing
 		 * custom movement data each client tick.
 		 * @return A pointer to the newly created saved move.
 		 */
@@ -208,7 +211,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Slide", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MinSlideSpeed = 400.f;
 
-	/** Maximum speed you can move at while sliding. */
+	/** Maximum speed you can move at while sliding. NOT WORKING ATM */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Slide", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MaxSlideSpeed = 400.f;
 
@@ -321,62 +324,70 @@ protected:
 	UAnimMontage* ProxyShortMantleMontage;
 
 	#pragma endregion
+
+	#pragma  region Wall Run
 	
 	/** Minimum speed required to initiate a wall run. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MinWallRunSpeed = 200.f;
 
 	/** Maximum horizontal velocity allowed during wall running. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MaxWallRunSpeed = 800.f;
 
 	/** Maximum upward velocity allowed during wall running. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MaxVerticalWallRunSpeed = 200.f;
 
 	/** Angle threshold to pull away from the wall (based on movement input). */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="degrees"))
 	float WallRunPullAwayAngle = 75;
 
 	/** Force that keeps the character pinned to the wall during a wall run. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0"))
 	float WallAttractionForce = 200.f;
 
 	/** Minimum height off the ground required to initiate a wall run. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MinWallRunHeight = 50.f;
-
+	
+	/** Force added to the character when jumping off a wall run. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
+	float WallJumpOffForce = 300.f;
+	
 	/** A curve controlling gravity scaling during wall run, typically set up so it’s lower at certain input angles. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Wall Run")
 	UCurveFloat* WallRunGravityScaleCurve;
 
-	/** Force added to the character when jumping off a wall run. */
-	UPROPERTY(EditDefaultsOnly)
-	float WallJumpOffForce = 300.f;
+	#pragma endregion
+
+	#pragma region Climbing/Hanging
 
 	/** Montage used as a transition before entering hang mode. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Climb")
 	UAnimMontage* TransitionHangMontage;
 
 	/** Montage for performing a wall jump (when on a climbable or hangable ledge). */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Climb")
 	UAnimMontage* WallJumpMontage;
 
 	/** Force added to the character when executing a wall jump from hang/climb. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Climb", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float WallJumpForce = 400.f;
 
 	/** Maximum speed while climbing a surface. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Climb", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float MaxClimbSpeed = 300.f;
 
 	/** Braking deceleration applied while climbing. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Climb", meta=(ClampMin="0", UIMin="0"))
 	float BrakingDecelerationClimbing = 1000.f;
 
 	/** How far in front of the capsule to check for a climbable surface. */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Character Movement: Climb", meta=(ClampMin="0", UIMin="0", ForceUnits="cm/s"))
 	float ClimbReachDistance = 200.f;
+
+	#pragma endregion
 
 #pragma endregion
 
@@ -470,7 +481,7 @@ public:
 	/**
 	 * Default constructor to initialize settings like bCanCrouch and bitwriter resizing.
 	 */
-	UZippyCharacterMovementComponent();
+	USurvivalCharacterMovementComponent();
 
 	/**
 	 * Called each tick; increments debug counters, displays on-screen debug info (if desired),
@@ -491,7 +502,7 @@ protected:
 public:
 
 	/**
-	 * Returns a pointer to the client prediction data (FNetworkPredictionData_Client_Zippy),
+	 * Returns a pointer to the client prediction data (FNetworkPredictionData_Client_SurvivalCharacter),
 	 * allocating one if it doesn’t already exist.
 	 * @return A pointer to the FNetworkPredictionData_Client for this character.
 	 */
@@ -630,7 +641,7 @@ protected:
 	 * to the server. This allows partial manual serialization of movement data,
 	 * including extra flags for sprint, slide, dash, etc.
 	 */
-	FNetBitWriter ZippyServerMoveBitWriter;
+	FNetBitWriter SurvivalServerMoveBitWriter;
 	
 	/**
 	 * Packs custom move data into a bitstream for server RPC, including our extra slide/sprint/etc. flags.
@@ -795,63 +806,63 @@ public:
 	 * Signals that the player wants to sprint. Sets the Safe_bWantsToSprint flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SprintPressed();
+	void StartSprint();
 
 	/**
 	 * Signals that the player released sprint. Unsets the Safe_bWantsToSprint flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SprintReleased();
+	void StopSprint();
 
 	/**
 	 * Signals that the player wants to slide. Sets the Safe_bWantsToSlide flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SlidePressed();
+	void StartSlide();
 
 	/**
 	 * Signals that the player no longer wants to slide. Unsets the Safe_bWantsToSlide flag.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SlideReleased();
+	void StopSlide();
 
 	/**
 	 * Toggles crouch and sets a timer to enter prone if crouch is held long enough.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void CrouchPressed();
+	void StartCrouch();
 
 	/**
 	 * Cancels the timer for entering prone if crouch is released.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void CrouchReleased();
+	void StopCrouch();
 
 	/**
 	 * Initiates dash logic if not on cooldown, or starts a timer to try again 
 	 * if the cooldown will expire soon.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void DashPressed();
+	void StartDash();
 
 	/**
 	 * Clears the dash cooldown timer, unsets the dash flag if dash input is released.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void DashReleased();
+	void StopDash();
 
 	/**
 	 * Signals that the player wants to climb or continue climbing if possible. 
 	 * Sets bWantsToCrouch if in midair or already climbing.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void ClimbPressed();
+	void StartClimb();
 
 	/**
 	 * Unsets bWantsToCrouch, effectively stopping climb/hang if pressed.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void ClimbReleased();
+	void StopClimb();
 
 	/**
 	 * Checks if we’re in a specific custom movement mode.

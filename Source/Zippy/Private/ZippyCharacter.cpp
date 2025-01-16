@@ -1,6 +1,6 @@
 #include "ZippyCharacter.h"
 
-#include "ZippyCharacterMovementComponent.h"
+#include "SurvivalCharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -9,9 +9,9 @@
 #include "GameFramework/SpringArmComponent.h"
 
 AZippyCharacter::AZippyCharacter(const FObjectInitializer& ObjectInitializer)
-: Super(ObjectInitializer.SetDefaultSubobjectClass<UZippyCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+: Super(ObjectInitializer.SetDefaultSubobjectClass<USurvivalCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
-	ZippyCharacterMovementComponent = Cast<UZippyCharacterMovementComponent>(GetCharacterMovement());
+	ZippyCharacterMovementComponent = Cast<USurvivalCharacterMovementComponent>(GetCharacterMovement());
 	ZippyCharacterMovementComponent->SetIsReplicated(true);
 
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
