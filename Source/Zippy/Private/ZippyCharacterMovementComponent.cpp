@@ -7,7 +7,7 @@
 #include "Net/UnrealNetwork.h"
 
 // Helper Macros
-#if 0
+#if 1
 float MacroDuration = 2.f;
 #define SLOG(x) GEngine->AddOnScreenDebugMessage(-1, MacroDuration ? MacroDuration : -1.f, FColor::Yellow, x);
 #define POINT(x, c) DrawDebugPoint(GetWorld(), x, 10, c, !MacroDuration, MacroDuration);
@@ -20,7 +20,8 @@ float MacroDuration = 2.f;
 #define CAPSULE(x, c)
 #endif
 
-
+// A tolerance for values like velocity as they will never be exactly equal on the server and client.
+#define SERVER_TOLERANCE 2.5f
 
 #pragma region Saved Move
 
@@ -572,7 +573,12 @@ void UZippyCharacterMovementComponent::EnterSlide(EMovementMode PrevMode, ECusto
 {
 	bWantsToCrouch = true;
 	bOrientRotationToMovement = false;
-	Velocity += Velocity.GetSafeNormal2D() * SlideEnterImpulse;
+
+	// Should prevent the spamming of slide to exploit the slide speed initial impulse.
+	if (Velocity.Size2D() < MaxSlideImpulseSpeed + SERVER_TOLERANCE)
+	{
+		Velocity += Velocity.GetSafeNormal2D() * SlideEnterImpulse;
+	}
 
 	FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, true, nullptr);
 }
