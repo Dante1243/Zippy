@@ -23,9 +23,9 @@ float MacroDuration = 2.f;
 // A tolerance for values like velocity as they will never be exactly equal on the server and client.
 #define SERVER_TOLERANCE 2.5f
 // Does a guard against a simulated proxy code below this will not run on a simulated proxy's.
-#define DO_SIM_PROXY_GUARD(RETVAL) if (CharacterOwner && CharacterOwner->GetLocalRole() != ROLE_SimulatedProxy) return RETVAL
-// A guard against a simulated proxy if false we are a simulated proxy.
-#define SIM_PROXY_GUARD CharacterOwner && CharacterOwner->GetLocalRole() != ROLE_SimulatedProxy
+#define DO_SIM_PROXY_GUARD(RETVAL) if (CharacterOwner && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) return RETVAL
+// A guard against a simulated proxy if true we are a simulated proxy.
+#define SIM_PROXY_GUARD CharacterOwner && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy
 
 
 #pragma region Saved Move
@@ -308,30 +308,28 @@ bool USurvivalCharacterMovementComponent::DoJump(bool bReplayingMoves)
 // Movement Pipeline
 void USurvivalCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
+	DO_SIM_PROXY_GUARD(Super::UpdateCharacterStateBeforeMovement(DeltaSeconds));
+	
 	// Slide
-	// Simulated proxies do not have any say in changing movement modes
-	if (CharacterOwner->GetLocalRole() != ROLE_SimulatedProxy)
+	if (MovementMode == MOVE_Walking && Safe_bWantsToSlide)
 	{
-		if (MovementMode == MOVE_Walking && Safe_bWantsToSlide)
+		if (CanSlide())
 		{
-			if (CanSlide())
-			{
-				SetMovementMode(MOVE_Custom, CMOVE_Slide);
-			}
+			SetMovementMode(MOVE_Custom, CMOVE_Slide);
 		}
-		else if (IsCustomMovementMode(CMOVE_Slide) && !Safe_bWantsToSlide)
-		{
-			SetMovementMode(MOVE_Walking);
-		}
-		else if (IsFalling() && bWantsToCrouch)
-		{
-			if (TryClimb()) bWantsToCrouch = false;
-		}
-		else if ((IsClimbing() || IsHanging()) && bWantsToCrouch)
-		{
-			SetMovementMode(MOVE_Falling);
-			bWantsToCrouch = false;
-		}
+	}
+	else if (IsCustomMovementMode(CMOVE_Slide) && !Safe_bWantsToSlide)
+	{
+		SetMovementMode(MOVE_Walking);
+	}
+	else if (IsFalling() && bWantsToCrouch)
+	{
+		if (TryClimb()) bWantsToCrouch = false;
+	}
+	else if ((IsClimbing() || IsHanging()) && bWantsToCrouch)
+	{
+		SetMovementMode(MOVE_Falling);
+		bWantsToCrouch = false;
 	}
 
 	// Prone
