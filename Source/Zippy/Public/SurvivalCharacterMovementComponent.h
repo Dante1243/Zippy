@@ -760,7 +760,7 @@ private:
 	 * @param bTallMantle True if we are performing a tall mantle.
 	 * @return The position to move the character to with root motion.
 	 */
-	FVector GetMantleStartLocation(FHitResult FrontHit, FHitResult SurfaceHit, bool bTallMantle) const;
+	FVector GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, bool bTallMantle) const;
 
 	/**
 	 * Attempts to initiate a wall run by checking side traces, velocity, etc.

@@ -145,7 +145,7 @@ USurvivalCharacterMovementComponent::FNetworkPredictionData_Client_SurvivalChara
 
 FSavedMovePtr USurvivalCharacterMovementComponent::FNetworkPredictionData_Client_SurvivalCharacter::AllocateNewMove()
 {
-	return FSavedMovePtr(new FSavedMove_SurvivalCharacter());
+	return MakeShared<FSavedMove_SurvivalCharacter>();
 }
 
 #pragma endregion
@@ -212,8 +212,9 @@ FNetworkPredictionData_Client* USurvivalCharacterMovementComponent::GetPredictio
 		USurvivalCharacterMovementComponent* MutableThis = const_cast<USurvivalCharacterMovementComponent*>(this);
 
 		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_SurvivalCharacter(*this);
-		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
-		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f; 
+		// @TODO: Whys this here?
+		// MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
+		// MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f; 
 	}
 	return ClientPredictionData;
 }
@@ -1195,7 +1196,7 @@ SLOG(FString::Printf(TEXT("Duration: %f"), TransitionRMS->Duration))
 	return true;
 }
 
-FVector USurvivalCharacterMovementComponent::GetMantleStartLocation(FHitResult FrontHit, FHitResult SurfaceHit, bool bTallMantle) const
+FVector USurvivalCharacterMovementComponent::GetMantleStartLocation(const FHitResult& FrontHit, const FHitResult& SurfaceHit, const bool bTallMantle) const
 {
 	float CosWallSteepnessAngle = FrontHit.Normal | FVector::UpVector;
 	float DownDistance = bTallMantle ? CapHH() * 2.f : MaxStepHeight - 1;
